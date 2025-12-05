@@ -1,9 +1,11 @@
-import json
 import logging
 import random
 import time
-from kafka import KafkaProducer
-from kafka.errors import KafkaError
+
+from confluent_kafka import Producer
+from confluent_kafka.schema_registry import SchemaRegistryClient
+from confluent_kafka.schema_registry.json_schema import JSONSerializer
+from confluent_kafka.serialization import SerializationContext, MessageField
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,17 +13,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cloud_gaming_producer")
 
+schema_str = open("schemas/cloud_gaming_schema.json").read()
+
 
 def main():
-    producer = KafkaProducer(
-        bootstrap_servers='kafka-0-s:9092',
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+
+    # Connect to schema registry (inside docker network)
+    schema_registry_client = SchemaRegistryClient(
+        {"url": "http://schema-registry:8081"}
     )
+    json_serializer = JSONSerializer(schema_str, schema_registry_client)
+
+    # Kafka producer
+    producer = Producer({
+        "bootstrap.servers": "kafka-0-s:9092"
+    })
+
     topic_name = "cloud_gaming_kpi"
     logger.info("Kafka producer initialized for topic '%s'", topic_name)
 
-    
     while True:
+
         message = {
             "CPU_usage": random.randint(50, 100),
             "GPU_usage": random.randint(40, 100),
@@ -30,9 +42,19 @@ def main():
             "FrameRate_fps": random.randint(24, 120),
             "Jitter_ms": random.randint(0, 30)
         }
+
         try:
-            producer.send(topic_name, value=message)
-            logger.info("Sent message: %s", message)
-        except KafkaError as e:
+            producer.produce(
+                topic=topic_name,
+                value=json_serializer(
+                    message,
+                    SerializationContext(topic_name, MessageField.VALUE)
+                )
+            )
+            producer.flush()
+            logger.info("Sent: %s", message)
+
+        except Exception as e:
             logger.error("Failed to send message: %s", e)
+
         time.sleep(1)

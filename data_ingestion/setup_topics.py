@@ -33,3 +33,5 @@ def create_kafka_topics():
         logger.warning(f"Topic already exists: {e}")
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
+    finally:
+        admin_client.close()
