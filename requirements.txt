@@ -1,1 +1,4 @@
+confluent-kafka==2.12.2
 kafka-python==2.3.0
+confluent-kafka[json,avro]
+attrs
