@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy your Python script
-COPY data_ingestion/*.py .
+COPY data_ingestion/ .
 
 # Command to run your script
 CMD ["python", "run_all.py"]
