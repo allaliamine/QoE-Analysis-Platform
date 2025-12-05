@@ -24,10 +24,18 @@ services:
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-
-
+      # Additional settings for schema registry compatibility
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
     volumes:
       - kafka_0_data_s:/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   kafka-ui-s:
     image: "provectuslabs/kafka-ui:latest"
@@ -41,18 +49,46 @@ services:
       - DYNAMIC_CONFIG_ENABLED=true
       - KAFKA_CLUSTERS_0_NAME=wizard_test
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0-s:9092
+      - KAFKA_CLUSTERS_0_SCHEMAREGISTRY=http://schema-registry:8081
     depends_on:
-      - kafka-0-s
+      kafka-0-s:
+        condition: service_healthy
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    networks:
+      - app-tier
+    container_name: schema-registry
+    ports:
+      - "9081:8081"
+    environment:
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_LISTENERS=http://0.0.0.0:8081
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=kafka-0-s:9092
+    depends_on:
+      kafka-0-s:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 
   kafka-producer:
     build:
       context: ../..          
       dockerfile: infrastructure/docker/Dockerfile.data_ingestion
     networks:
-      - app-tier
+      - app-tier    
     depends_on:
-      - kafka-0-s
-
+      kafka-0-s:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      
 volumes:
   kafka_0_data_s:
     driver: local
