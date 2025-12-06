@@ -43,7 +43,7 @@ services:
       - app-tier
     container_name: "kafka-ui-s"
     ports:
-      - "8081:8080"
+      - "8080:8080"
     restart: "always"
     environment:
       - DYNAMIC_CONFIG_ENABLED=true
@@ -81,7 +81,6 @@ services:
     build:
       context: ../..          
       dockerfile: infrastructure/docker/Dockerfile.data_ingestion
-    container_name: kafka-producer
     networks:
       - app-tier    
     depends_on:
@@ -89,9 +88,6 @@ services:
         condition: service_healthy
       schema-registry:
         condition: service_healthy
-    restart: on-failure
-    environment:
-      - PYTHONUNBUFFERED=1
       
 volumes:
   kafka_0_data_s:
