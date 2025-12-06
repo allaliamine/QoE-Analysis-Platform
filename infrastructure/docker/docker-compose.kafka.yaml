@@ -1,8 +1,9 @@
-version: '3.1'
-
 networks:
   app-tier:
     external: true
+
+
+name: kafka-cluster
 
 services:
   kafka-0-s:
