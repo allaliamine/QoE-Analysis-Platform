@@ -11,36 +11,35 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s - %(message)s"
 )
-logger = logging.getLogger("cloud_gaming_producer")
+logger = logging.getLogger("video_streaming_producer")
 
-schema_str = open("schemas/cloud_gaming_schema.json").read()
+schema_str = open("schemas/video_streaming_schema.json").read()
 
 
 def main():
 
-    # Connect to schema registry (inside docker network)
+    # Schema Registry client
     schema_registry_client = SchemaRegistryClient(
-        {"url": "http://schema-registry:8081"}
+        {"url": "http://schema-registry:8081"}   # inside Docker network
     )
     json_serializer = JSONSerializer(schema_str, schema_registry_client)
 
-    # Kafka producer
+    # Kafka Producer (Confluent)
     producer = Producer({
         "bootstrap.servers": "kafka-0-s:9092"
     })
 
-    topic_name = "cloud_gaming_kpi"
+    topic_name = "video_stream_kpi"
     logger.info("Kafka producer initialized for topic '%s'", topic_name)
 
     while True:
 
         message = {
-            "CPU_usage": random.randint(50, 100),
-            "GPU_usage": random.randint(40, 100),
-            "Bandwidth_MBps": round(random.uniform(10, 100), 2),
-            "Latency_ms": random.randint(20, 200),
-            "FrameRate_fps": random.randint(24, 120),
-            "Jitter_ms": random.randint(0, 30)
+            "throughput": round(random.uniform(1000, 5000), 2),
+            "avg_bitrate": round(random.uniform(500, 4000), 2),
+            "delay_qos": round(random.uniform(0, 200), 2),
+            "jitter": round(random.uniform(0, 50), 2),
+            "packet_loss": round(random.uniform(0, 5), 2)
         }
 
         try:
@@ -52,7 +51,7 @@ def main():
                 )
             )
             producer.flush()
-            logger.info("Sent: %s", message)
+            logger.info("Sent message: %s", message)
 
         except Exception as e:
             logger.error("Failed to send message: %s", e)
