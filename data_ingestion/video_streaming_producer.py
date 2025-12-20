@@ -4,7 +4,7 @@ import time
 
 from confluent_kafka import Producer
 from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.json_schema import JSONSerializer
+from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import SerializationContext, MessageField
 
 logging.basicConfig(
@@ -13,7 +13,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("video_streaming_producer")
 
-schema_str = open("schemas/video_streaming_schema.json").read()
+avro_schema_str = open("schemas/video_streaming_schema.avsc").read()
 
 
 def main():
@@ -22,14 +22,14 @@ def main():
     schema_registry_client = SchemaRegistryClient(
         {"url": "http://schema-registry:8081"}   # inside Docker network
     )
-    json_serializer = JSONSerializer(schema_str, schema_registry_client)
+    avro_serializer = AvroSerializer(schema_registry_client, avro_schema_str)
 
     # Kafka Producer (Confluent)
     producer = Producer({
         "bootstrap.servers": "kafka-0-s:9092"
     })
 
-    topic_name = "video_stream_kpi"
+    topic_name = "video_streaming_kpi"
     logger.info("Kafka producer initialized for topic '%s'", topic_name)
 
     while True:
@@ -45,7 +45,7 @@ def main():
         try:
             producer.produce(
                 topic=topic_name,
-                value=json_serializer(
+                value=avro_serializer(
                     message,
                     SerializationContext(topic_name, MessageField.VALUE)
                 )

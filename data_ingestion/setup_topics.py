@@ -21,7 +21,7 @@ def create_kafka_topics():
     
     # Define topics
     topics = [
-        NewTopic(name='video_stream_kpi', num_partitions=1, replication_factor=1),
+        NewTopic(name='video_streaming_kpi', num_partitions=1, replication_factor=1),
         NewTopic(name='cloud_gaming_kpi', num_partitions=1, replication_factor=1)
     ]
     
