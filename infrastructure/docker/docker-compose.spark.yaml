@@ -29,6 +29,8 @@ services:
       - "8082:8081"
     environment:
       - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4g
     command: bash -c "chmod -R 777 /opt/spark/work && /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
     volumes:
       - ../../data_processing:/opt/spark-apps
@@ -43,7 +45,7 @@ services:
     networks:
       - app-tier
     ports:
-      - "4040:4040"  # Spark Application UI
+      - "4040:4040"
     volumes:
       - ../../data_pipeline/consumers:/opt/spark-apps
       - spark_ivy_cache:/root/.ivy2
@@ -51,18 +53,51 @@ services:
       - bash
       - -c
       - |
+        pip3 install requests && 
         mkdir -p /root/.ivy2/cache && 
         chmod -R 777 /root/.ivy2 && 
         /opt/spark/bin/spark-submit \
           --master spark://spark-master:7077 \
-          --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \
-          --conf spark.executor.memory=2g \
-          --conf spark.driver.memory=2g \
+          --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0 \
+          --conf spark.executor.cores=1 \
+          --conf spark.executor.memory=1g \
+          --conf spark.driver.memory=1g \
           --conf spark.ui.port=4040 \
           /opt/spark-apps/cloud-gaming-consumer.py
     depends_on:
       - spark-master
     restart: on-failure
+
+  video-consumer:
+    image: spark:3.5.0-python3
+    container_name: streaming-consumer
+    user: root
+    networks:
+      - app-tier
+    ports:
+      - "4041:4040"
+    volumes:
+      - ../../data_pipeline/consumers:/opt/spark-apps
+      - spark_ivy_cache:/root/.ivy2
+    command:
+      - bash
+      - -c
+      - |
+        pip3 install requests && \
+        mkdir -p /root/.ivy2/cache && \
+        chmod -R 777 /root/.ivy2 && \
+        /opt/spark/bin/spark-submit \
+          --master spark://spark-master:7077 \
+          --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0 \
+          --conf spark.executor.cores=1 \
+          --conf spark.executor.memory=1g \
+          --conf spark.driver.memory=1g \
+          --conf spark.ui.port=4040 \
+          /opt/spark-apps/video-streaming-consumer.py
+    depends_on:
+      - spark-master
+    restart: on-failure
+
 
 volumes:
   spark_master_data:
