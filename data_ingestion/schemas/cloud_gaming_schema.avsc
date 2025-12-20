@@ -1,0 +1,38 @@
+{
+  "type": "record",
+  "name": "CloudGamingKPI",
+  "namespace": "cloud.gaming.kpi",
+  "doc": "Schema for cloud gaming KPI metrics",
+  "fields": [
+    {
+      "name": "CPU_usage",
+      "type": "int",
+      "doc": "CPU usage percentage"
+    },
+    {
+      "name": "GPU_usage",
+      "type": "int",
+      "doc": "GPU usage percentage"
+    },
+    {
+      "name": "Bandwidth_MBps",
+      "type": "double",
+      "doc": "Bandwidth in megabytes per second"
+    },
+    {
+      "name": "Latency_ms",
+      "type": "int",
+      "doc": "Network latency in milliseconds"
+    },
+    {
+      "name": "FrameRate_fps",
+      "type": "int",
+      "doc": "Frame rate in frames per second"
+    },
+    {
+      "name": "Jitter_ms",
+      "type": "int",
+      "doc": "Network jitter in milliseconds"
+    }
+  ]
+}

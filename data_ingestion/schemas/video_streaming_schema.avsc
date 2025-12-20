@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "VideoStreamingKPI",
+  "namespace": "com.qoe.streaming",
+  "doc": "Schema for video streaming KPI metrics",
+  "fields": [
+    {
+      "name": "throughput",
+      "type": "double",
+      "doc": "Network throughput in Kbps"
+    },
+    {
+      "name": "avg_bitrate",
+      "type": "double",
+      "doc": "Average bitrate in Kbps"
+    },
+    {
+      "name": "delay_qos",
+      "type": "double",
+      "doc": "Quality of Service delay in milliseconds"
+    },
+    {
+      "name": "jitter",
+      "type": "double",
+      "doc": "Network jitter in milliseconds"
+    },
+    {
+      "name": "packet_loss",
+      "type": "double",
+      "doc": "Packet loss percentage"
+    }
+  ]
+}
