@@ -29,7 +29,7 @@ services:
       - "8082:8081"
     environment:
       - SPARK_MASTER=spark://spark-master:7077
-      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_CORES=4
       - SPARK_WORKER_MEMORY=4g
     command: bash -c "chmod -R 777 /opt/spark/work && /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
     volumes:
@@ -59,6 +59,7 @@ services:
         /opt/spark/bin/spark-submit \
           --master spark://spark-master:7077 \
           --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0 \
+          --conf spark.cores.max=2 \
           --conf spark.executor.cores=1 \
           --conf spark.executor.memory=1g \
           --conf spark.driver.memory=1g \
@@ -85,10 +86,11 @@ services:
       - |
         pip3 install requests && \
         mkdir -p /root/.ivy2/cache && \
-        chmod -R 777 /root/.ivy2 && \
+        chmod -R 777 /root/.ivy2 && \ 
         /opt/spark/bin/spark-submit \
           --master spark://spark-master:7077 \
           --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0 \
+          --conf spark.cores.max=2 \
           --conf spark.executor.cores=1 \
           --conf spark.executor.memory=1g \
           --conf spark.driver.memory=1g \
