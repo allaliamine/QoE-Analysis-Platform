@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: qoe-clickhouse
+    restart: always
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native protocol
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      CLICKHOUSE_DB: raw_data
+      CLICKHOUSE_USER: qoe_user
+      CLICKHOUSE_PASSWORD: qoe_password
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+      - ./clickhouse-init:/docker-entrypoint-initdb.d
+    networks:
+      - app-tier
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    container_name: qoe-ch-ui
+    ports:
+      - "5521:5521"
+    environment:
+      - VITE_CLICKHOUSE_URL=http://clickhouse:8123
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - app-tier
+
+
+volumes:
+  clickhouse_data:
+    driver: local
+  clickhouse_logs:
+    driver: local
+
+networks:
+  app-tier:
+    external: true
