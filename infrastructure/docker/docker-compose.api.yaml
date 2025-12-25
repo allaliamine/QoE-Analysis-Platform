@@ -1,0 +1,48 @@
+networks:
+  app-tier:
+    external: true
+
+name: qoe-prediction-apis
+
+services:
+  cloud-gaming-api:
+    build:
+      context: ../../api/cloud_gaming
+      dockerfile: Dockerfile
+    container_name: cloud-gaming-api
+    networks:
+      - app-tier
+    ports:
+      - "8001:8000"
+    volumes:
+      - ../../ml/models:/app/models:ro
+    environment:
+      - MODEL_PATH=/app/models/cloud_gaming_model.pkl
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  video-streaming-api:
+    build:
+      context: ../../api/video_streaming
+      dockerfile: Dockerfile
+    container_name: video-streaming-api
+    networks:
+      - app-tier
+    ports:
+      - "8002:8000"
+    volumes:
+      - ../../ml/models:/app/models:ro
+    environment:
+      - MODEL_PATH=/app/models/video_streaming_model.pkl
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
