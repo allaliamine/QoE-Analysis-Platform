@@ -18,6 +18,7 @@ spark.sparkContext.setLogLevel("WARN")
 KAFKA_BOOTSTRAP_SERVERS = "kafka-0-s:9092"
 SCHEMA_REGISTRY_URL = "http://schema-registry:8081"
 TOPIC_NAME = "cloud_gaming_kpi"
+API_URL = "http://cloud-gaming-api:8000/predict"
 
 schema_response = requests.get(
     f"{SCHEMA_REGISTRY_URL}/subjects/{TOPIC_NAME}-value/versions/latest"
@@ -31,26 +32,51 @@ df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
     .option("subscribe", TOPIC_NAME) \
-    .option("startingOffsets", "earliest") \
+    .option("startingOffsets", "latest") \
     .option("failOnDataLoss", "false") \
     .load()
 
-final_df = df.selectExpr("substring(value, 6) as avro_value") \
+parsed_df = df.selectExpr("substring(value, 6) as avro_value") \
     .select(
-    from_avro(
-        col("avro_value"),
-        avro_schema,
-        {"schema.registry.url": SCHEMA_REGISTRY_URL}
-    ).alias("data")).select(
-    "data.*",
-).withColumn(
-    "processing_time",
-    current_timestamp()
-)
-query = final_df.writeStream \
-    .format("console") \
+        from_avro(
+            col("avro_value"),
+            avro_schema,
+            {"schema.registry.url": SCHEMA_REGISTRY_URL}
+        ).alias("data")
+    ).select("data.*") \
+    .withColumn("processing_time", current_timestamp())
+
+
+def process_batch(batch_df, batch_id):
+    """Process each batch and call API for each record"""
+    records = batch_df.collect()
+    
+    for row in records:
+        try:
+            payload = {
+                "CPU_usage": float(row["CPU_usage"]),
+                "GPU_usage": float(row["GPU_usage"]),
+                "Bandwidth_MBps": float(row["Bandwidth_MBps"]),
+                "Latency_ms": float(row["Latency_ms"]),
+                "FrameRate_fps": float(row["FrameRate_fps"]),
+                "Jitter_ms": float(row["Jitter_ms"])
+            }
+            
+            response = requests.post(API_URL, json=payload, timeout=5)
+            
+            if response.status_code == 200:
+                prediction = response.json()
+                logger.info(f"Record: {payload} => Prediction: {prediction}")
+            else:
+                logger.error(f"API error: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            logger.error(f"Error processing record: {e}")
+
+
+query = parsed_df.writeStream \
+    .foreachBatch(process_batch) \
     .outputMode("append") \
-    .option("truncate", "false") \
     .start()
 
 logger.info("Consumer started successfully")
