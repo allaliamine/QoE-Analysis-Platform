@@ -6,7 +6,7 @@ pipeline {
     NAMESPACE    = "qoe"
 
     VENV_DIR = ".venv"
-
+    PATH = "/opt/homebrew/bin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin"
     PYTHON_PATH  = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13"
 
     BACKEND_IMAGE  = "qoe/dashboard-backend:dev"
@@ -18,6 +18,20 @@ pipeline {
   }
 
   stages {
+    
+    stage('Tool Check') {
+        steps {
+            sh '''
+            echo "PATH=$PATH"
+            which docker
+            which kind
+            which kubectl
+            docker version
+            kind version
+            kubectl version --client
+            '''
+        }
+    }
 
     stage('Checkout') {
         steps {
