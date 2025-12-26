@@ -7,6 +7,8 @@ pipeline {
 
     VENV_DIR = ".venv"
 
+    PYTHON_PATH  = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13"
+
     BACKEND_IMAGE  = "qoe/dashboard-backend:dev"
     FRONTEND_IMAGE = "qoe/dashboard-frontend:dev"
   }
@@ -28,8 +30,7 @@ pipeline {
     stage('Setup Virtual Environment') {
         steps {
             sh """
-            python3 -m venv ${VENV_DIR}
-                
+            ${PYTHON_PATH} -m venv ${VENV_DIR}
             . ${VENV_DIR}/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
