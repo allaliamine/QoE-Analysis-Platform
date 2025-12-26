@@ -8,6 +8,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
+import pandas as pd
 
 app = FastAPI(
     title="Video Streaming QoE Prediction API",
@@ -81,6 +82,17 @@ async def predict_qoe(input_data: VideoStreamingInput):
             input_data.jitter,
             input_data.packet_loss
         ]])
+
+        FEATURES = ["throughput", "avg_bitrate", "delay_qos", "jitter", "packet_loss"]
+
+        # inside predict_qoe
+        features = pd.DataFrame([{
+            "throughput": input_data.throughput,
+            "avg_bitrate": input_data.avg_bitrate,
+            "delay_qos": input_data.delay_qos,
+            "jitter": input_data.jitter,
+            "packet_loss": input_data.packet_loss,
+        }], columns=FEATURES)
         
         prediction = model.predict(features)[0]
 

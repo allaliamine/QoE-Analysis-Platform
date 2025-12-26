@@ -7,6 +7,7 @@ import joblib
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+import pandas as pd
 
 app = FastAPI(
     title="Cloud Gaming QoE Prediction API",
@@ -72,14 +73,17 @@ async def predict_qoe(input_data: CloudGamingInput):
         raise HTTPException(status_code=503, detail="Model not loaded")
     
     try:
-        features = np.array([[
-            input_data.CPU_usage,
-            input_data.GPU_usage,
-            input_data.Bandwidth_MBps,
-            input_data.Latency_ms,
-            input_data.FrameRate_fps,
-            input_data.Jitter_ms
-        ]])
+       
+        FEATURES = ["CPU_usage", "GPU_usage", "Bandwidth_MBps", "Latency_ms", "FrameRate_fps", "Jitter_ms"]
+
+        features = pd.DataFrame([{
+            "CPU_usage": input_data.CPU_usage,
+            "GPU_usage": input_data.GPU_usage,
+            "Bandwidth_MBps": input_data.Bandwidth_MBps,
+            "Latency_ms": input_data.Latency_ms,
+            "FrameRate_fps": input_data.FrameRate_fps,
+            "Jitter_ms": input_data.Jitter_ms,
+        }], columns=FEATURES)
         
         prediction = model.predict(features)[0]
         
