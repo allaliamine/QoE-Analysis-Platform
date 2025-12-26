@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <title>Real-time QoE Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
+  <style>
+    :root {
+      /* Dark theme (default) */
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #111827;
+      --bg-card: #1a1f35;
+      --bg-card-hover: #1f2544;
+      --bg-chart: rgba(99, 102, 241, 0.05);
+      --border-color: rgba(99, 102, 241, 0.15);
+      --border-glow: rgba(99, 102, 241, 0.3);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-primary: #818cf8;
+      --accent-secondary: #6366f1;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.1);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.1);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f8fafc;
+      --bg-chart: rgba(99, 102, 241, 0.03);
+      --border-color: rgba(99, 102, 241, 0.12);
+      --border-glow: rgba(99, 102, 241, 0.25);
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* Animated background gradient */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-secondary);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-gradient);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .logo-icon i {
+      color: white;
+      width: 22px;
+      height: 22px;
+    }
+
+    .logo-text h1 {
+      font-size: 18px;
+      font-weight: 700;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-text span {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Status indicators */
+    .status-group {
+      display: flex;
+      gap: 16px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .status-item i {
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .ok {
+      color: var(--success) !important;
+    }
+
+    .ok .status-dot {
+      background: var(--success);
+      box-shadow: 0 0 12px var(--success);
+    }
+
+    .bad {
+      color: var(--error) !important;
+    }
+
+    .bad .status-dot {
+      background: var(--error);
+      box-shadow: 0 0 12px var(--error);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-glow);
+      transform: scale(1.05);
+    }
+
+    .theme-toggle i {
+      width: 20px;
+      height: 20px;
+      color: var(--text-secondary);
+      transition: transform 0.3s ease;
+    }
+
+    .theme-toggle:hover i {
+      color: var(--accent-primary);
+      transform: rotate(15deg);
+    }
+
+    /* Main grid */
+    .grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 24px;
+      padding: 24px;
+      grid-template-columns: 1fr;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 1200px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md), var(--shadow-glow);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md), 0 0 60px rgba(99, 102, 241, 0.12);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-icon.gaming {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .card-icon.gaming i {
+      color: #a78bfa;
+    }
+
+    .card-icon.streaming {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .card-icon.streaming i {
+      color: #60a5fa;
+    }
+
+    .card-icon i {
+      width: 24px;
+      height: 24px;
+    }
+
+    .card-title-text h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .card-badge {
+      padding: 6px 12px;
+      background: var(--accent-gradient);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Charts */
+    .charts {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+
+    .chartbox {
+      background: var(--bg-chart);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .chartbox:hover {
+      border-color: var(--border-glow);
+    }
+
+    .charttitle {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin: 0 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .charttitle i {
+      width: 16px;
+      height: 16px;
+      color: var(--accent-primary);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 240px !important;
+    }
+
+    .dist canvas {
+      height: 200px !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .status-group {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status-item {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+
+      .grid {
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-secondary);
+    }
+
+    /* QoE Alert Notifications */
+    .qoe-alert {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      animation: alertSlideIn 0.3s ease;
+    }
+
+    .qoe-alert.visible {
+      display: flex;
+    }
+
+    .qoe-alert.recovering {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    @keyframes alertSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .qoe-alert i {
+      width: 20px;
+      height: 20px;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
+
+    .qoe-alert.recovering i {
+      color: #22c55e;
+    }
+
+    .qoe-alert-content {
+      flex: 1;
+    }
+
+    .qoe-alert-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fca5a5;
+      margin-bottom: 2px;
+    }
+
+    .qoe-alert.recovering .qoe-alert-title {
+      color: #86efac;
+    }
+
+    .qoe-alert-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .qoe-alert-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ef4444;
+      padding: 6px 12px;
+      background: rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+    }
+
+    .qoe-alert.recovering .qoe-alert-value {
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <i data-lucide="activity"></i>
+    </div>
+    <div class="logo-text">
+      <h1>QoE Dashboard</h1>
+      <span>Real-time Analytics</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="status-group">
+      <div class="status-item" id="cloudStatusBox">
+        <i data-lucide="gamepad-2"></i>
+        <span>Cloud Gaming</span>
+        <span class="status-dot"></span>
+        <span id="cloudStatus" class="bad">offline</span>
+      </div>
+      <div class="status-item" id="videoStatusBox">
+        <i data-lucide="video"></i>
+        <span>Video Stream</span>
+        <span class="status-dot"></span>
+        <span id="videoStatus" class="bad">offline</span>
+      </div>
+    </div>
+
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+      <i data-lucide="moon" id="themeIcon"></i>
+    </button>
+  </div>
+</header>
+
+<div class="grid">
+  <!-- Cloud Gaming -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon gaming">
+          <i data-lucide="gamepad-2"></i>
+        </div>
+        <div class="card-title-text">
+          <h2>Cloud Gaming</h2>
+          <div class="sub">QoE distribution & real-time predictions</div>
+        </div>
+      </div>
+      <span class="card-badge">Live</span>
+    </div>
+
+    <div class="qoe-alert" id="cloudAlert">
+      <i data-lucide="alert-triangle"></i>
+      <div class="qoe-alert-content">
+        <div class="qoe-alert-title">QoE Degradation Detected</div>
+        <div class="qoe-alert-desc">Cloud Gaming quality has dropped below threshold</div>
+      </div>
+      <div class="qoe-alert-value" id="cloudAlertValue">--</div>
+    </div>
+
+    <div class="charts">
+      <div class="chartbox dist">
+        <div class="charttitle">
+          <i data-lucide="bar-chart-3"></i>
+          QoE Class Distribution
+        </div>
+        <canvas id="cloudDist"></canvas>
+      </div>
+
+      <div class="chartbox">
+        <div class="charttitle">
+          <i data-lucide="trending-up"></i>
+          Predicted QoE (30s window)
+        </div>
+        <canvas id="cloudLine"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Streaming -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon streaming">
+          <i data-lucide="video"></i>
+        </div>
+        <div class="card-title-text">
+          <h2>Video Streaming</h2>
+          <div class="sub">QoE distribution & real-time predictions</div>
+        </div>
+      </div>
+      <span class="card-badge">Live</span>
+    </div>
+
+    <div class="qoe-alert" id="videoAlert">
+      <i data-lucide="alert-triangle"></i>
+      <div class="qoe-alert-content">
+        <div class="qoe-alert-title">QoE Degradation Detected</div>
+        <div class="qoe-alert-desc">Video Streaming quality has dropped below threshold</div>
+      </div>
+      <div class="qoe-alert-value" id="videoAlertValue">--</div>
+    </div>
+
+    <div class="charts">
+      <div class="chartbox dist">
+        <div class="charttitle">
+          <i data-lucide="bar-chart-3"></i>
+          QoE Class Distribution
+        </div>
+        <canvas id="videoDist"></canvas>
+      </div>
+
+      <div class="chartbox">
+        <div class="charttitle">
+          <i data-lucide="trending-up"></i>
+          Predicted QoE (30s window)
+        </div>
+        <canvas id="videoLine"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  // ---- config ----
+  const WINDOW_MS = 30_000; // 30 seconds window
+
+  function parseTs(ts) {
+    // ts should be ISO; fall back to Date parsing
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+
+  // ---- QoE Class Colors ----
+  const QOE_CLASS_COLORS = {
+    'Poor': { bg: 'rgba(239, 68, 68, 0.8)', border: 'rgba(239, 68, 68, 1)' },      // Red
+    'Bad': { bg: 'rgba(239, 68, 68, 0.8)', border: 'rgba(239, 68, 68, 1)' },       // Red (alias)
+    'Fair': { bg: 'rgba(251, 191, 36, 0.8)', border: 'rgba(251, 191, 36, 1)' },    // Amber
+    'Good': { bg: 'rgba(59, 130, 246, 0.8)', border: 'rgba(59, 130, 246, 1)' },    // Blue
+    'Excellent': { bg: 'rgba(34, 197, 94, 0.8)', border: 'rgba(34, 197, 94, 1)' }  // Green
+  };
+
+  const QOE_CLASS_ORDER = ['Poor', 'Bad', 'Fair', 'Good', 'Excellent'];
+
+  function getClassColor(klass, type = 'bg') {
+    return QOE_CLASS_COLORS[klass]?.[type] || 'rgba(148, 163, 184, 0.8)';
+  }
+
+  // ---- distribution chart (bar) ----
+  function makeDistChart(canvas) {
+    const data = { 
+      labels: [], 
+      datasets: [{ 
+        label: "count", 
+        data: [],
+        backgroundColor: [],
+        borderColor: [],
+        borderWidth: 2,
+        borderRadius: 6
+      }] 
+    };
+
+    const chart = new Chart(canvas, {
+      type: "bar",
+      data,
+      options: {
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: true }
+        },
+        scales: {
+          x: { 
+            ticks: { maxRotation: 0, minRotation: 0, color: 'var(--text-secondary)' },
+            grid: { display: false }
+          },
+          y: { 
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            ticks: { color: 'var(--text-secondary)' }
+          }
+        }
+      }
+    });
+
+    const counts = {}; // cumulative
+
+    function applyDelta(deltaCounts) {
+      for (const [klass, inc] of Object.entries(deltaCounts)) {
+        counts[klass] = (counts[klass] || 0) + Number(inc || 0);
+      }
+      // Sort by QoE class order
+      const labels = Object.keys(counts).sort((a, b) => {
+        const aIdx = QOE_CLASS_ORDER.indexOf(a);
+        const bIdx = QOE_CLASS_ORDER.indexOf(b);
+        if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+        if (aIdx === -1) return 1;
+        if (bIdx === -1) return -1;
+        return aIdx - bIdx;
+      });
+      data.labels = labels;
+      data.datasets[0].data = labels.map(k => counts[k]);
+      data.datasets[0].backgroundColor = labels.map(k => getClassColor(k, 'bg'));
+      data.datasets[0].borderColor = labels.map(k => getClassColor(k, 'border'));
+      chart.update();
+    }
+
+    return { applyDelta };
+  }
+
+  // ---- QoE Alert Management ----
+  const QOE_THRESHOLD = 2.5; // Below this = degradation
+  const RECOVERY_THRESHOLD = 3.0; // Above this = recovered
+  let alertTimers = {};
+
+  function updateQoEAlert(alertId, valueId, currentQoE) {
+    const alertEl = document.getElementById(alertId);
+    const valueEl = document.getElementById(valueId);
+    if (!alertEl || !valueEl) return;
+
+    const titleEl = alertEl.querySelector('.qoe-alert-title');
+    const descEl = alertEl.querySelector('.qoe-alert-desc');
+    const iconEl = alertEl.querySelector('i');
+
+    if (currentQoE < QOE_THRESHOLD) {
+      // Show degradation alert
+      alertEl.classList.add('visible');
+      alertEl.classList.remove('recovering');
+      valueEl.textContent = currentQoE.toFixed(2);
+      titleEl.textContent = 'QoE Degradation Detected';
+      descEl.textContent = `Quality has dropped to ${currentQoE < 2 ? 'Poor' : 'Fair'} level`;
+      iconEl.setAttribute('data-lucide', 'alert-triangle');
+      lucide.createIcons();
+      
+      // Clear any recovery timer
+      if (alertTimers[alertId]) {
+        clearTimeout(alertTimers[alertId]);
+        alertTimers[alertId] = null;
+      }
+    } else if (currentQoE >= RECOVERY_THRESHOLD && alertEl.classList.contains('visible')) {
+      // Show recovery message briefly
+      alertEl.classList.add('recovering');
+      valueEl.textContent = currentQoE.toFixed(2);
+      titleEl.textContent = 'QoE Recovered';
+      descEl.textContent = `Quality has improved to ${currentQoE >= 4 ? 'Excellent' : 'Good'} level`;
+      iconEl.setAttribute('data-lucide', 'check-circle');
+      lucide.createIcons();
+      
+      // Hide after 3 seconds
+      alertTimers[alertId] = setTimeout(() => {
+        alertEl.classList.remove('visible', 'recovering');
+      }, 3000);
+    }
+  }
+
+  // ---- line chart with moving 30s window ----
+  function makeWindowLineChart(canvas, alertId, valueId) {
+    const series = []; // [{t: Date, y: number}]
+
+    const data = {
+      labels: [],
+      datasets: [{
+        label: "predicted_qoe",
+        data: [],
+        tension: 0.25,
+        pointRadius: 0,
+        borderColor: 'rgba(99, 102, 241, 1)',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        borderWidth: 2
+      }]
+    };
+
+    const chart = new Chart(canvas, {
+      type: "line",
+      data,
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true } },
+        scales: {
+          y: { 
+            min: 1, 
+            max: 5, 
+            ticks: { stepSize: 1, color: 'var(--text-secondary)' },
+            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+          },
+          x: { 
+            ticks: { maxTicksLimit: 6, color: 'var(--text-secondary)' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    function addPoints(points) {
+      // add incoming points
+      for (const p of points) {
+        const t = parseTs(p.ts);
+        const y = Math.min(5, Math.max(1, Number(p.qoe)));
+        series.push({ t, y });
+      }
+
+      // keep only last 30s
+      const now = new Date();
+      const cutoff = now.getTime() - WINDOW_MS;
+      while (series.length && series[0].t.getTime() < cutoff) series.shift();
+
+      // rebuild chart arrays from series
+      data.labels = series.map(s => s.t.toLocaleTimeString());
+      data.datasets[0].data = series.map(s => s.y);
+      
+      // Update line color based on latest QoE
+      if (series.length > 0) {
+        const latestQoE = series[series.length - 1].y;
+        let lineColor;
+        if (latestQoE < 2) lineColor = 'rgba(239, 68, 68, 1)'; // Poor - Red
+        else if (latestQoE < 3) lineColor = 'rgba(251, 191, 36, 1)'; // Fair - Amber
+        else if (latestQoE < 4) lineColor = 'rgba(59, 130, 246, 1)'; // Good - Blue
+        else lineColor = 'rgba(34, 197, 94, 1)'; // Excellent - Green
+        
+        data.datasets[0].borderColor = lineColor;
+        data.datasets[0].backgroundColor = lineColor.replace('1)', '0.1)');
+        
+        // Update alert
+        if (alertId && valueId) {
+          updateQoEAlert(alertId, valueId, latestQoE);
+        }
+      }
+      
+      chart.update();
+    }
+
+    return { addPoints };
+  }
+
+  // ---- create charts ----
+  const cloudDist = makeDistChart(document.getElementById("cloudDist"));
+  const videoDist = makeDistChart(document.getElementById("videoDist"));
+
+  const cloudLine = makeWindowLineChart(document.getElementById("cloudLine"), "cloudAlert", "cloudAlertValue");
+  const videoLine = makeWindowLineChart(document.getElementById("videoLine"), "videoAlert", "videoAlertValue");
+
+  // ---- SSE ----
+  function connect(url, statusEl, onPayload) {
+    const es = new EventSource(url);
+
+    es.onopen = () => { statusEl.textContent = "on"; statusEl.className = "ok"; };
+    es.onerror = () => { statusEl.textContent = "off"; statusEl.className = "bad"; };
+
+    es.onmessage = (e) => {
+      const payload = JSON.parse(e.data);
+      if (payload.delta_counts) onPayload.delta(payload.delta_counts);
+      if (payload.points) onPayload.points(payload.points);
+    };
+  }
+
+  connect("/api/stream/cloud-gaming", document.getElementById("cloudStatus"), {
+    delta: cloudDist.applyDelta,
+    points: cloudLine.addPoints
+  });
+
+  connect("/api/stream/video-streaming", document.getElementById("videoStatus"), {
+    delta: videoDist.applyDelta,
+    points: videoLine.addPoints
+  });
+
+  // ---- Theme Toggle ----
+  function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+  }
+
+  function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+      icon.setAttribute('data-lucide', theme === 'dark' ? 'moon' : 'sun');
+      lucide.createIcons();
+    }
+  }
+
+  // Load saved theme
+  (function() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+  })();
+
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+
+</body>
+</html>
