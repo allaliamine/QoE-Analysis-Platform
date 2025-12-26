@@ -5,6 +5,8 @@ pipeline {
     CLUSTER_NAME = "qoe"
     NAMESPACE    = "qoe"
 
+    VENV_DIR = ".venv"
+
     BACKEND_IMAGE  = "qoe/dashboard-backend:dev"
     FRONTEND_IMAGE = "qoe/dashboard-frontend:dev"
   }
@@ -23,37 +25,25 @@ pipeline {
     }
 
 
-    stage('Install Test Dependencies') {
-      agent {
-        docker {
-          image 'python:3.11-slim'
-          args '-u root:root'
+    stage('Setup Virtual Environment') {
+        steps {
+            sh """
+            python3 -m venv ${VENV_DIR}
+                
+            . ${VENV_DIR}/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            """
         }
-      }
-      steps {
-        sh '''
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-        '''
-      }
     }
 
     stage('Run Tests') {
-      agent {
-        docker {
-          image 'python:3.11-slim'
-          args '-u root:root'
-        }
-      }
       steps {
-        sh '''
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-          pytest tests/
-        '''
-      }
+            sh """
+            . ${VENV_DIR}/bin/activate
+            pytest tests/
+            """
+        }
     }
 
     stage('Build Docker Images') {
