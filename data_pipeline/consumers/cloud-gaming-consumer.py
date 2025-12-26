@@ -26,16 +26,20 @@ CLICKHOUSE_HOST = "clickhouse"
 CLICKHOUSE_PORT = "8123"
 CLICKHOUSE_USER = "qoe_user"
 CLICKHOUSE_PASSWORD = "qoe_password"
-CLICKHOUSE_DATABASE = "raw_data"
-CLICKHOUSE_TABLE = "cloud_gaming_raw"
+CLICKHOUSE_DATABASE_RAW = "raw_data"
+CLICKHOUSE_TABLE_RAW = "cloud_gaming_raw"
+CLICKHOUSE_DATABASE_PREDICTIONS = "predictions"
+CLICKHOUSE_TABLE_PREDICTIONS = "cloud_gaming_predictions"
 
 schema_response = requests.get(
     f"{SCHEMA_REGISTRY_URL}/subjects/{TOPIC_NAME}-value/versions/latest"
 )
-avro_schema = json.loads(schema_response.text)["schema"]
+schema_response.raise_for_status()
+response_json = schema_response.json()
+avro_schema = response_json["schema"]
 
-print("Using Avro Schema:")
-print(avro_schema)
+# print("Using Avro Schema:")
+# print(avro_schema)
 
 df = spark.readStream \
     .format("kafka") \
@@ -74,8 +78,8 @@ def write_to_clickhouse(batch_df, batch_id):
             pandas_df = batch_df.toPandas()
             csv_data = pandas_df.to_csv(index=False, header=False)
             
-            # Prepare INSERT query - explicitly list columns matching order
-            insert_query = f"""INSERT INTO {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} (CPU_usage, GPU_usage, Bandwidth_MBps, Latency_ms, FrameRate_fps, Jitter_ms, processing_time) FORMAT CSV"""
+            # Prepare INSERT query - 
+            insert_query = f"""INSERT INTO {CLICKHOUSE_DATABASE_RAW}.{CLICKHOUSE_TABLE_RAW} (CPU_usage, GPU_usage, Bandwidth_MBps, Latency_ms, FrameRate_fps, Jitter_ms, processing_time) FORMAT CSV"""
             
             # Send to ClickHouse via HTTP
             response = requests.post(
@@ -84,25 +88,19 @@ def write_to_clickhouse(batch_df, batch_id):
                     'query': insert_query,
                     'user': CLICKHOUSE_USER,
                     'password': CLICKHOUSE_PASSWORD,
-                    'database': CLICKHOUSE_DATABASE
+                    'database': CLICKHOUSE_DATABASE_RAW
                 },
                 data=csv_data.encode('utf-8'),
                 timeout=60
             )
             
             if response.status_code == 200:
-                logger.info(f"[Cloud Gaming] Batch {batch_id} written successfully to ClickHouse")
+                logger.info(f"[Cloud Gaming] Raw Batch {batch_id} written successfully to ClickHouse")
             else:
                 logger.error(f"[Cloud Gaming] HTTP Error {response.status_code}: {response.text}")
             
-            # Optional: Show sample data in console for debugging
-            logger.info(f"Sample data from batch {batch_id}:")
-            batch_df.show(5, truncate=False)
-            
         except Exception as e:
             logger.error(f"[Cloud Gaming] Error writing batch {batch_id}: {str(e)}")
-            # Log the schema mismatch if any
-            logger.error(f"DataFrame schema: {batch_df.schema}")
 
 
 
@@ -125,7 +123,7 @@ def process_batch(batch_df, batch_id):
             
             if response.status_code == 200:
                 prediction = response.json()
-                logger.info(f"Record: {payload} => Prediction: {prediction}")
+                logger.info(f"Record treated with success => Prediction: {prediction}")
                 
                 # Prepare prediction record with input features and QoE score
                 prediction_record = {
@@ -152,7 +150,7 @@ def process_batch(batch_df, batch_id):
             predictions_df = pd.DataFrame(predictions_list)
             csv_data = predictions_df.to_csv(index=False, header=False)
             
-            insert_query = f"""INSERT INTO predictions.cloud_gaming_predictions (CPU_usage, GPU_usage, Bandwidth_MBps, Latency_ms, FrameRate_fps, Jitter_ms, predicted_qoe, qoe_class) FORMAT CSV"""
+            insert_query = f"""INSERT INTO {CLICKHOUSE_DATABASE_PREDICTIONS}.{CLICKHOUSE_TABLE_PREDICTIONS} (CPU_usage, GPU_usage, Bandwidth_MBps, Latency_ms, FrameRate_fps, Jitter_ms, predicted_qoe, qoe_class) FORMAT CSV"""
             
             response = requests.post(
                 f'http://{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}/',
@@ -160,7 +158,7 @@ def process_batch(batch_df, batch_id):
                     'query': insert_query,
                     'user': CLICKHOUSE_USER,
                     'password': CLICKHOUSE_PASSWORD,
-                    'database': 'predictions'
+                    'database': CLICKHOUSE_DATABASE_PREDICTIONS
                 },
                 data=csv_data.encode('utf-8'),
                 timeout=60
