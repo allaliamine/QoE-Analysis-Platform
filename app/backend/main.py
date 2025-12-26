@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from clickhouse_connect import get_client
 
-CLICKHOUSE_HOST = "clickhouse"
+CLICKHOUSE_HOST = "host.docker.internal" # use clickhouse when container based
 CLICKHOUSE_PORT = "8123"
 CLICKHOUSE_USER = "qoe_user"
 CLICKHOUSE_PASSWORD = "qoe_password"
