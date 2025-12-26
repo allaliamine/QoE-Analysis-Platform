@@ -18,7 +18,7 @@ pipeline {
   }
 
   stages {
-    
+
     stage('Tool Check') {
         steps {
             sh '''
@@ -84,8 +84,8 @@ pipeline {
         sh '''
           kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-          kubectl apply -f k8s/app/backend.yaml
-          kubectl apply -f k8s/app/frontend.yaml
+          kubectl apply -f ./infrastructure/kind/app/backend.yaml
+          kubectl apply -f ./infrastructure/kind/app/frontend.yaml
 
           kubectl rollout restart deployment/backend -n $NAMESPACE
           kubectl rollout restart deployment/frontend -n $NAMESPACE
