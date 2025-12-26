@@ -54,6 +54,7 @@ services:
       - -c
       - |
         pip3 install requests && 
+        pip3 install pandas && 
         mkdir -p /root/.ivy2/cache && 
         chmod -R 777 /root/.ivy2 && 
         /opt/spark/bin/spark-submit \
@@ -84,7 +85,8 @@ services:
       - bash
       - -c
       - |
-        pip3 install requests && \
+        pip3 install requests && 
+        pip3 install pandas && 
         mkdir -p /root/.ivy2/cache && \
         chmod -R 777 /root/.ivy2 && \ 
         /opt/spark/bin/spark-submit \
