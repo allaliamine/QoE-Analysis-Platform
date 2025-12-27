@@ -47,7 +47,7 @@ pipeline {
             ${PYTHON_PATH} -m venv ${VENV_DIR}
             . ${VENV_DIR}/bin/activate
             pip install --upgrade pip
-            pip install -r requirements.txt
+            pip install -r requirements.dev.txt
             """
         }
     }
@@ -104,11 +104,34 @@ pipeline {
   }
 
   post {
-    success {
-      echo '✅ CI/CD pipeline completed successfully'
+        success {
+            emailext(
+                to: "hamdonhamid67@gmail.com",
+                from: "Jenkins CI/CD",
+                replyTo: "Jenkins CI/CD",
+                subject: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """\
+                <p>Good news!</p>
+                <p>Build <b>${env.JOB_NAME} #${env.BUILD_NUMBER}</b> succeeded.</p>
+                <p>Check details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """
+            )
+        }
+    
+        failure {
+            emailext(
+                to: "hamdonhamid67@gmail.com",
+                from: "Jenkins CI/CD",
+                replyTo: "Jenkins CI/CD",
+                subject: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """\
+                <p>Uh oh...</p>
+                <p>Build <b>${env.JOB_NAME} #${env.BUILD_NUMBER}</b> failed.</p>
+                <p>Check logs: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """
+            )
+        }
     }
-    failure {
-      echo '❌ CI/CD pipeline failed'
-    }
-  }
 }
