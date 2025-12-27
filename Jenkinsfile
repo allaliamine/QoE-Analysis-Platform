@@ -107,8 +107,6 @@ pipeline {
         success {
             emailext(
                 to: "hamdonhamid67@gmail.com",
-                from: "Jenkins CI/CD",
-                replyTo: "Jenkins CI/CD",
                 subject: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """\
@@ -122,8 +120,6 @@ pipeline {
         failure {
             emailext(
                 to: "hamdonhamid67@gmail.com",
-                from: "Jenkins CI/CD",
-                replyTo: "Jenkins CI/CD",
                 subject: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """\
