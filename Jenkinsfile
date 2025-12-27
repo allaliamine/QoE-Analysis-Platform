@@ -107,6 +107,7 @@ pipeline {
         success {
             emailext(
                 to: "hamdonhamid67@gmail.com",
+                from: "Jenkins@noreplay.com",
                 subject: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """\
@@ -120,6 +121,7 @@ pipeline {
         failure {
             emailext(
                 to: "hamdonhamid67@gmail.com",
+                from: "Jenkins@noreplay.com",
                 subject: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """\
