@@ -1,101 +1,101 @@
 # QoE Analysis Platform
 
-Plateforme de collecte, prediction et visualisation temps reel de la Qualite d'Experience (QoE) pour deux cas d'usage :
+A real-time Quality of Experience (QoE) collection, prediction, and visualization platform for two use cases:
 
 - Cloud Gaming
 - Video Streaming
 
-Le projet simule des flux KPI, les publie dans Kafka avec des schemas Avro, les traite avec Spark Structured Streaming, appelle des APIs FastAPI de prediction ML, stocke les donnees brutes et les predictions dans ClickHouse, puis affiche les resultats dans un dashboard web temps reel.
+The project simulates KPI streams, publishes them to Kafka with Avro schemas, processes them with Spark Structured Streaming, calls FastAPI-based ML prediction services, stores raw data and predictions in ClickHouse, and displays the results in a real-time web dashboard.
 
 ## Architecture
 
-![Architecture du projet](docs/architecture.png)
+![Project architecture](docs/architecture.png)
 
-Flux logique du projet :
+Logical project flow:
 
 ```mermaid
 flowchart LR
-    A[Producteurs KPI simules] --> B[Kafka topics]
+    A[Simulated KPI producers] --> B[Kafka topics]
     B --> C[Schema Registry Avro]
     B --> D[Spark Structured Streaming]
     C --> D
-    D --> E[APIs FastAPI de prediction ML]
+    D --> E[FastAPI ML prediction APIs]
     E --> F[ClickHouse predictions]
     D --> G[ClickHouse raw_data]
-    F --> H[Backend dashboard SSE]
-    H --> I[Frontend temps reel]
+    F --> H[Dashboard backend SSE]
+    H --> I[Real-time frontend]
 ```
 
-## Fonctionnalites
+## Features
 
-- Generation continue de KPI pour Cloud Gaming et Video Streaming.
-- Serialisation Avro avec Confluent Schema Registry.
-- Topics Kafka dedies :
+- Continuous KPI generation for Cloud Gaming and Video Streaming.
+- Avro serialization with Confluent Schema Registry.
+- Dedicated Kafka topics:
   - `cloud_gaming_kpi`
   - `video_streaming_kpi`
-- Traitement streaming avec Spark.
-- APIs de prediction QoE exposees avec FastAPI.
-- Modeles ML entraines avec scikit-learn et sauvegardes en `.pkl`.
-- Stockage ClickHouse en deux couches :
-  - `raw_data` pour les KPI bruts.
-  - `predictions` pour les scores QoE predits.
-- Dashboard web temps reel avec Server-Sent Events (SSE), Chart.js, theme clair/sombre et alertes de degradation QoE.
-- Environnement Docker Compose pour Kafka, Schema Registry, Spark, ClickHouse, APIs et dashboard.
-- Manifests Kubernetes kind pour le deploiement du dashboard.
-- Pipeline Jenkins pour tests, build Docker et deploiement kind.
+- Streaming processing with Spark.
+- QoE prediction APIs exposed with FastAPI.
+- ML models trained with scikit-learn and saved as `.pkl` artifacts.
+- ClickHouse storage with two layers:
+  - `raw_data` for raw KPI records.
+  - `predictions` for predicted QoE scores.
+- Real-time web dashboard with Server-Sent Events (SSE), Chart.js, light/dark mode, and QoE degradation alerts.
+- Docker Compose environment for Kafka, Schema Registry, Spark, ClickHouse, APIs, and dashboard services.
+- Kubernetes kind manifests for local dashboard deployment.
+- Jenkins pipeline for tests, Docker image builds, and kind deployment.
 
-## Structure du depot
+## Repository Structure
 
 ```text
 .
 |-- api/
-|   |-- cloud_gaming/          # API FastAPI de prediction Cloud Gaming
-|   `-- video_streaming/       # API FastAPI de prediction Video Streaming
+|   |-- cloud_gaming/          # FastAPI prediction API for Cloud Gaming
+|   `-- video_streaming/       # FastAPI prediction API for Video Streaming
 |-- app/
-|   |-- backend/               # Backend dashboard, SSE et lecture ClickHouse
-|   `-- frontend/              # Dashboard HTML/CSS/JS servi par Nginx
-|-- data_ingestion/            # Producteurs Kafka et schemas Avro
-|-- data_pipeline/consumers/   # Consumers Spark Structured Streaming
+|   |-- backend/               # Dashboard backend, SSE, and ClickHouse reads
+|   `-- frontend/              # HTML/CSS/JS dashboard served by Nginx
+|-- data_ingestion/            # Kafka producers and Avro schemas
+|-- data_pipeline/consumers/   # Spark Structured Streaming consumers
 |-- infrastructure/
-|   |-- docker/                # Docker Compose et Dockerfile ingestion
-|   `-- kind/                  # Configuration Kubernetes kind
+|   |-- docker/                # Docker Compose files and ingestion Dockerfile
+|   `-- kind/                  # Kubernetes kind configuration
 |-- ml/
-|   |-- config/                # Configurations YAML des datasets et modeles
-|   |-- data/                  # Datasets CSV
-|   |-- evaluation/            # Evaluation et selection du meilleur modele
-|   |-- models/                # Modeles entraines
-|   `-- training/              # Script d'entrainement unifie
-|-- storage/                   # Scripts SQL d'initialisation ClickHouse
-|-- tests/                     # Tests unitaires pytest
-|-- Jenkinsfile                # Pipeline CI/CD
+|   |-- config/                # YAML dataset and model configurations
+|   |-- data/                  # CSV datasets
+|   |-- evaluation/            # Model evaluation and best-model selection
+|   |-- models/                # Trained model artifacts
+|   `-- training/              # Unified training script
+|-- storage/                   # ClickHouse initialization SQL scripts
+|-- tests/                     # pytest unit tests
+|-- Jenkinsfile                # CI/CD pipeline
 `-- README.md
 ```
 
-## Stack technique
+## Tech Stack
 
-| Couche | Technologies |
+| Layer | Technologies |
 | --- | --- |
 | Ingestion | Python, Confluent Kafka Producer, Avro, Schema Registry |
-| Messaging | Apache Kafka en mode KRaft |
+| Messaging | Apache Kafka in KRaft mode |
 | Streaming | Apache Spark 3.5 Structured Streaming |
 | Machine Learning | pandas, scikit-learn, joblib |
 | APIs | FastAPI, Uvicorn, Pydantic |
-| Stockage analytique | ClickHouse |
+| Analytical storage | ClickHouse |
 | Dashboard | HTML, CSS, JavaScript, Chart.js, Lucide Icons, SSE |
-| Conteneurisation | Docker, Docker Compose |
-| Orchestration locale | kind, Kubernetes, kubectl |
+| Containerization | Docker, Docker Compose |
+| Local orchestration | kind, Kubernetes, kubectl |
 | CI/CD | Jenkins |
 | Tests | pytest, FastAPI TestClient |
 
-## Donnees et variables ML
+## Data and ML Features
 
 ### Cloud Gaming
 
-Dataset : `ml/data/simulated_4k_cloud_gaming_dataset.csv`
+Dataset: `ml/data/simulated_4k_cloud_gaming_dataset.csv`
 
-- Nombre d'exemples : 1000
-- Cible : `QoE_score`
-- Variables :
+- Number of examples: 1000
+- Target: `QoE_score`
+- Features:
   - `CPU_usage`
   - `GPU_usage`
   - `Bandwidth_MBps`
@@ -103,53 +103,53 @@ Dataset : `ml/data/simulated_4k_cloud_gaming_dataset.csv`
   - `FrameRate_fps`
   - `Jitter_ms`
 
-Classes QoE :
+QoE classes:
 
-| Score | Classe |
+| Score | Class |
 | --- | --- |
 | `< 2` | Poor |
-| `>= 2` et `< 3` | Fair |
-| `>= 3` et `< 4` | Good |
+| `>= 2` and `< 3` | Fair |
+| `>= 3` and `< 4` | Good |
 | `>= 4` | Excellent |
 
 ### Video Streaming
 
-Dataset : `ml/data/video - streaming.csv`
+Dataset: `ml/data/video - streaming.csv`
 
-- Nombre d'exemples : 20411
-- Cible : `mos`
-- Variables :
+- Number of examples: 20411
+- Target: `mos`
+- Features:
   - `throughput`
   - `avg_bitrate`
   - `delay_qos`
   - `jitter`
   - `packet_loss`
 
-Classes QoE :
+QoE classes:
 
-| Score | Classe |
+| Score | Class |
 | --- | --- |
 | `< 2` | Bad |
-| `>= 2` et `< 3` | Poor |
-| `>= 3` et `< 4` | Fair |
-| `>= 4` et `< 4.5` | Good |
+| `>= 2` and `< 3` | Poor |
+| `>= 3` and `< 4` | Fair |
+| `>= 4` and `< 4.5` | Good |
 | `>= 4.5` | Excellent |
 
-## Prerequis
+## Requirements
 
-- Python 3.11 ou plus recent
+- Python 3.11 or newer
 - Docker
 - Docker Compose v2
 - Git
-- Pour Kubernetes local :
+- For local Kubernetes:
   - kind
   - kubectl
-- Pour Jenkins :
-  - Jenkins avec acces a Docker, kind et kubectl
+- For Jenkins:
+  - Jenkins with access to Docker, kind, and kubectl
 
-## Installation locale Python
+## Local Python Setup
 
-Depuis la racine du depot :
+From the repository root:
 
 ```bash
 python -m venv .venv
@@ -158,166 +158,166 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Pour les dependances de test uniquement :
+For test dependencies only:
 
 ```bash
 pip install -r requirements.dev.txt
 ```
 
-## Entrainement et evaluation des modeles
+## Model Training and Evaluation
 
-Le script `ml/training/train.py` entraine plusieurs modeles pour un dataset donne :
+The `ml/training/train.py` script trains multiple models for a selected dataset:
 
 - Linear Regression
 - ElasticNet
 - Random Forest Regressor
 - Gradient Boosting Regressor
 
-Entrainer les modeles Cloud Gaming :
+Train Cloud Gaming models:
 
 ```bash
 python -m ml.training.train --config cloud_gaming
 ```
 
-Entrainer les modeles Video Streaming :
+Train Video Streaming models:
 
 ```bash
 python -m ml.training.train --config video_streaming
 ```
 
-Evaluer les modeles et conserver le meilleur selon le RMSE :
+Evaluate models and keep the best one according to RMSE:
 
 ```bash
 python -m ml.evaluation.evaluate --config cloud_gaming
 python -m ml.evaluation.evaluate --config video_streaming
 ```
 
-Les modeles finaux attendus par les APIs sont :
+The final models expected by the APIs are:
 
 - `ml/models/cloud_gaming_model.pkl`
 - `ml/models/video_streaming_model.pkl`
 
-Note : le script d'evaluation sauvegarde le meilleur modele avec le nom final configure et supprime les autres fichiers candidats du meme dataset.
+Note: the evaluation script saves the best model using the configured final name and deletes the other candidate model files for the same dataset.
 
-## Demarrage avec Docker Compose
+## Running with Docker Compose
 
-Les fichiers Compose utilisent le reseau Docker externe `app-tier`. Cree-le une fois avant de demarrer les services :
+The Compose files use the external Docker network `app-tier`. Create it once before starting the services:
 
 ```bash
 docker network create app-tier
 ```
 
-Si le reseau existe deja, l'erreur peut etre ignoree.
+If the network already exists, you can ignore the error.
 
-### 1. Demarrer ClickHouse
+### 1. Start ClickHouse
 
 ```bash
 docker compose -f infrastructure/docker/docker-compose.clickhouse.yaml up -d
 ```
 
-Les scripts SQL du dossier `storage/` sont montes dans `/docker-entrypoint-initdb.d` et creent automatiquement :
+The SQL scripts in `storage/` are mounted into `/docker-entrypoint-initdb.d` and automatically create:
 
 - `raw_data.cloud_gaming_raw`
 - `raw_data.video_streaming_raw`
 - `predictions.cloud_gaming_predictions`
 - `predictions.video_streaming_predictions`
 
-### 2. Demarrer Kafka, Schema Registry et les producteurs
+### 2. Start Kafka, Schema Registry, and Producers
 
 ```bash
 docker compose -f infrastructure/docker/docker-compose.kafka.yaml up -d --build
 ```
 
-Services principaux :
+Main services:
 
-- Kafka : `kafka-0-s:9092`
-- Schema Registry : `http://schema-registry:8081`
-- Kafka UI : `http://localhost:8088`
-- Schema Registry local : `http://localhost:9081`
+- Kafka: `kafka-0-s:9092`
+- Schema Registry: `http://schema-registry:8081`
+- Kafka UI: `http://localhost:8088`
+- Local Schema Registry: `http://localhost:9081`
 
-Le service `kafka-producer` cree les topics puis publie un message par seconde pour chaque cas d'usage.
+The `kafka-producer` service creates the topics and publishes one message per second for each use case.
 
-### 3. Demarrer les APIs de prediction
+### 3. Start the Prediction APIs
 
 ```bash
 docker compose -f infrastructure/docker/docker-compose.api.yaml up -d --build
 ```
 
-Endpoints locaux :
+Local endpoints:
 
-- Cloud Gaming API : `http://localhost:8001`
-- Video Streaming API : `http://localhost:8002`
+- Cloud Gaming API: `http://localhost:8001`
+- Video Streaming API: `http://localhost:8002`
 
-Documentation Swagger :
+Swagger documentation:
 
 - `http://localhost:8001/docs`
 - `http://localhost:8002/docs`
 
-### 4. Demarrer Spark et les consumers streaming
+### 4. Start Spark and Streaming Consumers
 
 ```bash
 docker compose -f infrastructure/docker/docker-compose.spark.yaml up -d
 ```
 
-Services utiles :
+Useful services:
 
-- Spark Master UI : `http://localhost:8083`
-- Spark Worker UI : `http://localhost:8082`
-- Cloud Gaming Spark UI : `http://localhost:4040`
-- Video Streaming Spark UI : `http://localhost:4041`
+- Spark Master UI: `http://localhost:8083`
+- Spark Worker UI: `http://localhost:8082`
+- Cloud Gaming Spark UI: `http://localhost:4040`
+- Video Streaming Spark UI: `http://localhost:4041`
 
-Les consumers Spark lisent Kafka, deserialisent Avro, ecrivent les KPI bruts dans ClickHouse, appellent les APIs de prediction, puis stockent les predictions.
+The Spark consumers read from Kafka, deserialize Avro records, write raw KPIs to ClickHouse, call the prediction APIs, and store the predictions.
 
-### 5. Demarrer le dashboard
+### 5. Start the Dashboard
 
 ```bash
 docker compose -f infrastructure/docker/docker-compose.app.yaml up -d --build
 ```
 
-Dashboard :
+Dashboard:
 
 ```text
 http://localhost:8080
 ```
 
-Le frontend Nginx proxifie `/api/` vers le backend dashboard. Le backend expose les flux SSE :
+The Nginx frontend proxies `/api/` to the dashboard backend. The backend exposes these SSE streams:
 
 - `/api/stream/cloud-gaming`
 - `/api/stream/video-streaming`
 
-## URLs et ports
+## URLs and Ports
 
-| Service | URL locale | Description |
+| Service | Local URL | Description |
 | --- | --- | --- |
-| Dashboard | `http://localhost:8080` | Interface temps reel |
-| Backend dashboard | interne Docker `backend:8000` | Flux SSE depuis ClickHouse |
-| Cloud Gaming API | `http://localhost:8001` | Prediction QoE Cloud Gaming |
-| Video Streaming API | `http://localhost:8002` | Prediction QoE Video Streaming |
-| Kafka UI | `http://localhost:8088` | Inspection Kafka |
-| Schema Registry | `http://localhost:9081` | Schemas Avro |
-| ClickHouse HTTP | `http://localhost:8123` | API HTTP ClickHouse |
-| ClickHouse UI | `http://localhost:5521` | Interface ClickHouse |
-| Spark Master | `http://localhost:8083` | Cluster Spark |
-| Spark Worker | `http://localhost:8082` | Worker Spark |
+| Dashboard | `http://localhost:8080` | Real-time interface |
+| Dashboard backend | internal Docker `backend:8000` | SSE streams from ClickHouse |
+| Cloud Gaming API | `http://localhost:8001` | Cloud Gaming QoE prediction |
+| Video Streaming API | `http://localhost:8002` | Video Streaming QoE prediction |
+| Kafka UI | `http://localhost:8088` | Kafka inspection |
+| Schema Registry | `http://localhost:9081` | Avro schemas |
+| ClickHouse HTTP | `http://localhost:8123` | ClickHouse HTTP API |
+| ClickHouse UI | `http://localhost:5521` | ClickHouse interface |
+| Spark Master | `http://localhost:8083` | Spark cluster |
+| Spark Worker | `http://localhost:8082` | Spark worker |
 
-Identifiants ClickHouse de developpement :
+Development ClickHouse credentials:
 
 ```text
 user: qoe_user
 password: qoe_password
 ```
 
-## APIs de prediction
+## Prediction APIs
 
 ### Cloud Gaming
 
-Health check :
+Health check:
 
 ```bash
 curl http://localhost:8001/health
 ```
 
-Prediction :
+Prediction:
 
 ```bash
 curl -X POST http://localhost:8001/predict \
@@ -332,7 +332,7 @@ curl -X POST http://localhost:8001/predict \
   }'
 ```
 
-Reponse :
+Response:
 
 ```json
 {
@@ -343,13 +343,13 @@ Reponse :
 
 ### Video Streaming
 
-Health check :
+Health check:
 
 ```bash
 curl http://localhost:8002/health
 ```
 
-Prediction :
+Prediction:
 
 ```bash
 curl -X POST http://localhost:8002/predict \
@@ -363,7 +363,7 @@ curl -X POST http://localhost:8002/predict \
   }'
 ```
 
-Reponse :
+Response:
 
 ```json
 {
@@ -372,50 +372,50 @@ Reponse :
 }
 ```
 
-## Schema ClickHouse
+## ClickHouse Schema
 
-Le projet cree deux bases principales :
+The project creates two main databases:
 
 - `raw_data`
 - `predictions`
 
-Tables brutes :
+Raw tables:
 
 - `raw_data.cloud_gaming_raw`
 - `raw_data.video_streaming_raw`
 
-Tables de prediction :
+Prediction tables:
 
 - `predictions.cloud_gaming_predictions`
 - `predictions.video_streaming_predictions`
 
-Les tables utilisent le moteur `MergeTree`, sont partitionnees par mois avec `toYYYYMM(ingestion_timestamp)` et ordonnees par `(ingestion_timestamp, id)`.
+The tables use the `MergeTree` engine, are partitioned by month with `toYYYYMM(ingestion_timestamp)`, and are ordered by `(ingestion_timestamp, id)`.
 
-## Deploiement Kubernetes avec kind
+## Kubernetes Deployment with kind
 
-Le dossier `infrastructure/kind/` contient une configuration locale kind et les manifests du dashboard.
+The `infrastructure/kind/` directory contains a local kind configuration and dashboard manifests.
 
-Creer le cluster :
+Create the cluster:
 
 ```bash
 kind create cluster --name qoe --config infrastructure/kind/kind-config.yaml
 ```
 
-Builder les images dashboard :
+Build the dashboard images:
 
 ```bash
 docker build -t qoe/dashboard-backend:dev ./app/backend
 docker build -t qoe/dashboard-frontend:dev ./app/frontend
 ```
 
-Charger les images dans kind :
+Load the images into kind:
 
 ```bash
 kind load docker-image qoe/dashboard-backend:dev --name qoe
 kind load docker-image qoe/dashboard-frontend:dev --name qoe
 ```
 
-Deployer :
+Deploy:
 
 ```bash
 kubectl create namespace qoe
@@ -423,70 +423,70 @@ kubectl apply -f infrastructure/kind/app/backend.yaml
 kubectl apply -f infrastructure/kind/app/frontend.yaml
 ```
 
-Acceder au frontend :
+Access the frontend:
 
 ```bash
 kubectl port-forward -n qoe svc/frontend 8090:80
 ```
 
-URL :
+URL:
 
 ```text
 http://localhost:8090
 ```
 
-Le script `port.sh` lance aussi ce port-forward.
+The `port.sh` script also starts this port-forward.
 
 ## Tests
 
-Lancer les tests :
+Run the tests:
 
 ```bash
 pytest
 ```
 
-Les tests couvrent :
+The tests cover:
 
-- Le chargement des configurations ML.
-- La creation des modeles supportes.
-- Les mappings score QoE vers classe.
-- Les endpoints `/health` et `/predict` des APIs.
-- La validation Pydantic des payloads API.
+- Loading ML configurations.
+- Creating supported model types.
+- Mapping QoE scores to classes.
+- The `/health` and `/predict` API endpoints.
+- Pydantic validation for API payloads.
 
-## CI/CD Jenkins
+## Jenkins CI/CD
 
-Le `Jenkinsfile` execute les etapes suivantes :
+The `Jenkinsfile` runs these stages:
 
-1. Verification des outils (`docker`, `kind`, `kubectl`).
-2. Checkout du depot GitHub.
-3. Creation de l'environnement virtuel Python.
-4. Installation des dependances de test.
-5. Execution de `pytest tests/`.
-6. Build des images dashboard backend et frontend.
-7. Chargement des images dans le cluster kind.
-8. Deploiement Kubernetes dans le namespace `qoe`.
-9. Verification des pods et services.
-10. Notification email en cas de succes ou d'echec.
+1. Tool checks (`docker`, `kind`, `kubectl`).
+2. GitHub repository checkout.
+3. Python virtual environment creation.
+4. Test dependency installation.
+5. `pytest tests/` execution.
+6. Dashboard backend and frontend Docker image builds.
+7. Image loading into the kind cluster.
+8. Kubernetes deployment into the `qoe` namespace.
+9. Pod and service verification.
+10. Email notification on success or failure.
 
-## Configuration importante
+## Important Configuration
 
-Variables et chemins utilises par les services :
+Variables and paths used by the services:
 
-| Element | Valeur par defaut |
+| Item | Default value |
 | --- | --- |
-| Modele Cloud Gaming | `/app/models/cloud_gaming_model.pkl` |
-| Modele Video Streaming | `/app/models/video_streaming_model.pkl` |
-| Variable API modele | `MODEL_PATH` |
-| Kafka bootstrap interne | `kafka-0-s:9092` |
-| Schema Registry interne | `http://schema-registry:8081` |
-| ClickHouse interne | `clickhouse:8123` |
-| ClickHouse dashboard backend | `host.docker.internal:8123` |
-| Database ClickHouse raw | `raw_data` |
-| Database ClickHouse predictions | `predictions` |
+| Cloud Gaming model | `/app/models/cloud_gaming_model.pkl` |
+| Video Streaming model | `/app/models/video_streaming_model.pkl` |
+| API model variable | `MODEL_PATH` |
+| Internal Kafka bootstrap | `kafka-0-s:9092` |
+| Internal Schema Registry | `http://schema-registry:8081` |
+| Internal ClickHouse | `clickhouse:8123` |
+| Dashboard backend ClickHouse | `host.docker.internal:8123` |
+| ClickHouse raw database | `raw_data` |
+| ClickHouse predictions database | `predictions` |
 
-## Arret des services Docker
+## Stopping Docker Services
 
-Arreter les stacks Compose :
+Stop the Compose stacks:
 
 ```bash
 docker compose -f infrastructure/docker/docker-compose.app.yaml down
@@ -496,12 +496,18 @@ docker compose -f infrastructure/docker/docker-compose.kafka.yaml down
 docker compose -f infrastructure/docker/docker-compose.clickhouse.yaml down
 ```
 
-Pour supprimer aussi les volumes persistants, ajouter `-v` aux commandes `down`.
+To remove persistent volumes as well, add `-v` to the `down` commands.
 
-## Notes de developpement
+## Development Notes
 
-- Les credentials ClickHouse inclus sont destines au developpement local.
-- Les producteurs generent des donnees synthetiques aleatoires.
-- Les modeles `.pkl` sont charges au demarrage des APIs.
-- Le backend dashboard lit les tables `predictions.*` et diffuse uniquement les nouvelles lignes via SSE.
-- Les endpoints frontend sont relatifs (`/api/...`) afin de passer par le proxy Nginx.
+- The included ClickHouse credentials are intended for local development.
+- The producers generate random synthetic data.
+- The `.pkl` models are loaded when the APIs start.
+- The dashboard backend reads the `predictions.*` tables and streams only new rows via SSE.
+- Frontend endpoints are relative (`/api/...`) so they go through the Nginx proxy.
+
+## Contact
+
+For any inquiries or feedback, please contact:
+
+- [Allali Mohamed Amin](https://www.linkedin.com/in/m-amin-allali/)
